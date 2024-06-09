@@ -11,14 +11,6 @@ conda install pytorch==2.0.1 torchvision==0.15.2 pytorch-cuda=11.7 -c pytorch -c
 pip install numpy opencv-python
 ```
 
-[Pytorch-Correlation-extension 0.4.0](https://github.com/ClementPinard/Pytorch-Correlation-extension/tree/0.4.0) (Recommend to build from source)
-
-```
-git clone -b 0.4.0 https://github.com/ClementPinard/Pytorch-Correlation-extension.git
-cd Pytorch-Correlation-extension/
-python setup.py install
-```
-
 ## Datasets
 
 The datasets used to train and evaluate NeuFlow are as follows:

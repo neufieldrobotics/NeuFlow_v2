@@ -27,10 +27,10 @@ def main(args):
     num_params = sum(p.numel() for p in model.parameters())
     print('Number of params:', num_params)
 
-    # validate_things(model, dstype='frames_cleanpass', validate_subset=True, max_val_flow=400)
+    validate_things(model, dstype='frames_cleanpass', validate_subset=True, max_val_flow=400)
     # validate_things(model, dstype='frames_finalpass', validate_subset=False, max_val_flow=400)
     # validate_sintel(model, dstype='clean')
-    # validate_sintel(model, dstype='final')
+    validate_sintel(model, dstype='final')
     validate_kitti(model)
 
 if __name__ == '__main__':
