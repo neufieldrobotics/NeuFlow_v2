@@ -67,13 +67,6 @@ python train.py \
 --max_flow 400
 ```
 
-## Optional
-
-Write occlusion files for FlyingThings3D to prevent minimal overlap between image pairs during training.
-```
-python write_occ.py
-```
-
 ## Evaluation
 
 ```
