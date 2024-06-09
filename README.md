@@ -58,13 +58,13 @@ We trained the model for approximately a week, using a single RTX 4090 GPU and a
 python train.py \
 --checkpoint_dir $YOUR_CHECKPOINT_DIR \
 --stage things \
---val_dataset things sintel \
---batch_size 64 \
---num_workers 8 \
+--val_dataset things sintel kitti \
+--batch_size 42 \
+--num_workers 6 \
 --lr 2e-4 \
---weight_decay 1e-4 \
---val_freq 2000 \
---max_flow 400
+--val_freq 1000 \
+--resume neuflow_things.pth \
+--strict_resume
 ```
 
 ## Evaluation
