@@ -52,8 +52,6 @@ ln -s $YOUR_DATASET_ROOT datasets
 
 ## Training
 
-We trained the model for approximately a week, using a single RTX 4090 GPU and an i9-13900K CPU to achieve the accuracy reported in the paper. (The CPU played a crucial role, particularly as loading images might have been the bottleneck.)
-
 ```
 python train.py \
 --checkpoint_dir $YOUR_CHECKPOINT_DIR \
