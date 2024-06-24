@@ -157,7 +157,7 @@ def main(args):
             model_without_ddp.init_bhwd(img1.shape[0], img1.shape[-2], img1.shape[-1], device, args.amp)
 
             with torch.cuda.amp.autocast(enabled=args.amp):
-                flow_preds = model(img1, img2, iters_s8=5)
+                flow_preds = model(img1, img2, iters_s16=3, iters_s8=5)
                 loss, metrics = flow_loss_func(flow_preds, flow_gt, valid, args.max_flow)
 
             scaler.scale(loss).backward()
