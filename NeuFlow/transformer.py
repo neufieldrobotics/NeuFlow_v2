@@ -19,7 +19,6 @@ class TransformerLayer(torch.nn.Module):
         # self.multi_head_attn = torch.nn.MultiheadAttention(feature_dim, 2, batch_first=True, device='cuda')
 
         self.norm1 = torch.nn.LayerNorm(feature_dim)
-        # self.norm1 = torch.nn.InstanceNorm1d(feature_dim)
 
         self.ffn = ffn
 
@@ -47,9 +46,7 @@ class TransformerLayer(torch.nn.Module):
         message = self.merge(message)
 
         # message, _ = self.multi_head_attn(query, key, value, need_weights=False)
-        # message = message.permute(0,2,1)
         message = self.norm1(message)
-        # message = message.permute(0,2,1)
 
         if self.ffn:
             message = self.mlp(torch.cat([source, message], dim=-1))
@@ -71,25 +68,24 @@ class FeatureAttention(torch.nn.Module):
         if self.post_norm:
             self.norm = torch.nn.LayerNorm(feature_dim)
 
-    def forward(self, concat0):
+    def forward(self, concat_features0):
 
-        b, c, h, w = concat0.shape
+        b, c, h, w = concat_features0.shape
 
-        concat0 = concat0.flatten(-2).permute(0, 2, 1)  # [B, H*W, C]
-
-        concat1 = torch.cat(concat0.chunk(chunks=2, dim=0)[::-1], dim=0)
+        concat_features0 = concat_features0.flatten(-2).permute(0, 2, 1)  # [B, H*W, C]
+        concat_features1 = torch.cat(concat_features0.chunk(chunks=2, dim=0)[::-1], dim=0)
 
         for layer in self.layers:
-            concat0 = layer(concat0, concat1)
-            concat1 = torch.cat(concat0.chunk(chunks=2, dim=0)[::-1], dim=0)
+            concat_features0 = layer(concat_features0, concat_features1)
+            concat_features1 = torch.cat(concat_features0.chunk(chunks=2, dim=0)[::-1], dim=0)
 
         if self.post_norm:
-            concat0 = self.norm(concat0)
+            concat_features0 = self.norm(concat_features0)
 
         # reshape back
-        concat0 = concat0.view(b, h, w, c).permute(0, 3, 1, 2).contiguous()  # [B, C, H, W]
+        concat_features0 = concat_features0.view(b, h, w, c).permute(0, 3, 1, 2).contiguous()  # [B, C, H, W]
 
-        return concat0
+        return concat_features0
 
 
 class FlowAttention(torch.nn.Module):

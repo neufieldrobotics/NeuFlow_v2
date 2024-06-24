@@ -22,12 +22,13 @@ class UpSample(torch.nn.Module):
         b, _, h, w = flow.shape
 
         mask = mask.view(b, 1, 9, self.upsample_factor, self.upsample_factor, h, w)  # [B, 1, 9, K, K, H, W]
-        mask = torch.softmax(mask, dim=2, dtype=torch.half)
+        mask = torch.softmax(mask, dim=2)
 
-        up_flow = F.unfold(self.upsample_factor * flow, [3, 3], padding=1)
+        # up_flow = F.unfold(self.upsample_factor * flow, [3, 3], padding=1)
+        up_flow = F.unfold(flow, [3, 3], padding=1)
         up_flow = up_flow.view(b, 2, 9, 1, 1, h, w)  # [B, 2, 9, 1, 1, H, W]
 
-        up_flow = torch.sum(mask * up_flow, dim=2, dtype=torch.half)  # [B, 2, K, K, H, W]
+        up_flow = torch.sum(mask * up_flow, dim=2)  # [B, 2, K, K, H, W]
         up_flow = up_flow.permute(0, 1, 4, 2, 5, 3)  # [B, 2, K, H, K, W]
         up_flow = up_flow.reshape(b, 2, self.upsample_factor * h,
                                   self.upsample_factor * w)  # [B, 2, K*H, K*W]

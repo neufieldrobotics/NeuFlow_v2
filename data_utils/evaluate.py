@@ -12,7 +12,7 @@ from data_utils import flow_viz
 
 
 @torch.no_grad()
-def validate_chairs(model):
+def validate_chairs(model, device, amp=True):
     """ Perform evaluation on the FlyingChairs (test) split """
     model.eval()
     epe_list = []
@@ -25,12 +25,17 @@ def validate_chairs(model):
     for val_id in range(len(val_dataset)):
         image1, image2, flow_gt, _ = val_dataset[val_id]
 
-        image1 = image1[None].cuda()
-        image2 = image2[None].cuda()
+        if amp:
+            image1 = image1.half()
+            image2 = image2.half()
 
-        model.init_bhw(image1.shape[0], image1.shape[-2], image1.shape[-1])
+        image1 = image1[None].to(device)
+        image2 = image2[None].to(device)
 
-        results_dict = model(image1, image2)
+        model.init_bhwd(image1.shape[0], image1.shape[-2], image1.shape[-1], device, amp)
+
+        with torch.cuda.amp.autocast(enabled=amp):
+            results_dict = model(image1, image2)
 
         flow_pr = results_dict[-1]  # [B, 2, H, W]
 
@@ -48,31 +53,39 @@ def validate_chairs(model):
 
 @torch.no_grad()
 def validate_things(model,
+                    device,
                     dstype,
-                    validate_subset,
+                    test_set=True,
+                    validate_subset=True,
                     padding_factor=16,
-                    max_val_flow=400
+                    max_val_flow=400,
+                    amp=True
                     ):
     """ Peform validation using the Things (test) split """
     model.eval()
     results = {}
 
-    val_dataset = datasets.FlyingThings3D(dstype=dstype, test_set=True, validate_subset=validate_subset,
+    val_dataset = datasets.FlyingThings3D(dstype=dstype, test_set=test_set, validate_subset=validate_subset,
                                       )
     print('Number of validation image pairs: %d' % len(val_dataset))
     epe_list = []
 
     for val_id in range(len(val_dataset)):
         image1, image2, flow_gt, valid_gt = val_dataset[val_id]
-        image1 = image1[None].cuda()
-        image2 = image2[None].cuda()
+
+        if amp:
+            image1 = image1.half()
+            image2 = image2.half()
+
+        image1 = image1[None].to(device)
+        image2 = image2[None].to(device)
 
         padder = frame_utils.InputPadder(image1.shape, padding_factor=padding_factor)
         image1, image2 = padder.pad(image1, image2)
 
-        model.init_bhw(image1.shape[0], image1.shape[-2], image1.shape[-1])
+        model.init_bhwd(image1.shape[0], image1.shape[-2], image1.shape[-1], device, amp)
 
-        with torch.cuda.amp.autocast():
+        with torch.cuda.amp.autocast(enabled=amp):
             results_dict = model(image1, image2)
         flow_pr = results_dict[-1].float()
 
@@ -99,8 +112,10 @@ def validate_things(model,
 
 @torch.no_grad()
 def validate_sintel(model,
+                    device,
                     dstype,
-                    padding_factor=16
+                    padding_factor=16,
+                    amp=True
                     ):
     """ Peform validation using the Sintel (train) split """
     model.eval()
@@ -115,15 +130,19 @@ def validate_sintel(model,
         
         image1, image2, flow_gt, _ = val_dataset[val_id]
 
-        image1 = image1[None].cuda()
-        image2 = image2[None].cuda()
+        if amp:
+            image1 = image1.half()
+            image2 = image2.half()
+
+        image1 = image1[None].to(device)
+        image2 = image2[None].to(device)
 
         padder = frame_utils.InputPadder(image1.shape, padding_factor=padding_factor)
         image1, image2 = padder.pad(image1, image2)
 
-        model.init_bhw(image1.shape[0], image1.shape[-2], image1.shape[-1])
+        model.init_bhwd(image1.shape[0], image1.shape[-2], image1.shape[-1], device, amp)
 
-        with torch.cuda.amp.autocast():
+        with torch.cuda.amp.autocast(enabled=amp):
             results_dict = model(image1, image2)
 
         # useful when using parallel branches
@@ -149,7 +168,9 @@ def validate_sintel(model,
 
 @torch.no_grad()
 def validate_kitti(model,
-                   padding_factor=32
+                   device,
+                   padding_factor=16,
+                   amp=True
                    ):
     """ Peform validation using the KITTI-2015 (train) split """
     model.eval()
@@ -162,15 +183,20 @@ def validate_kitti(model,
 
     for val_id in range(len(val_dataset)):
         image1, image2, flow_gt, valid_gt = val_dataset[val_id]
-        image1 = image1[None].cuda()
-        image2 = image2[None].cuda()
+
+        if amp:
+            image1 = image1.half()
+            image2 = image2.half()
+
+        image1 = image1[None].to(device)
+        image2 = image2[None].to(device)
 
         padder = frame_utils.InputPadder(image1.shape, mode='kitti', padding_factor=padding_factor)
         image1, image2 = padder.pad(image1, image2)
 
-        model.init_bhw(image1.shape[0], image1.shape[-2], image1.shape[-1])
+        model.init_bhwd(image1.shape[0], image1.shape[-2], image1.shape[-1], device, amp)
 
-        with torch.cuda.amp.autocast():
+        with torch.cuda.amp.autocast(enabled=amp):
             results_dict = model(image1, image2)
 
         # useful when using parallel branches
@@ -205,7 +231,7 @@ def validate_kitti(model,
     return results
 
 @torch.no_grad()
-def create_kitti_submission(model, output_path='datasets/kitti_submission/flow', padding_factor=16, save_vis_flow=False):
+def create_kitti_submission(model, device, output_path='datasets/kitti_submission/flow', padding_factor=16, save_vis_flow=False, amp=True):
     """ Create submission for the Sintel leaderboard """
     model.eval()
     test_dataset = datasets.KITTI(split='testing', aug_params=None)
@@ -215,10 +241,15 @@ def create_kitti_submission(model, output_path='datasets/kitti_submission/flow',
 
     for test_id in range(len(test_dataset)):
         image1, image2, (frame_id,) = test_dataset[test_id]
-        padder = frame_utils.InputPadder(image1.shape, mode='kitti', padding_factor=padding_factor)
-        image1_pad, image2_pad = padder.pad(image1[None].cuda(), image2[None].cuda())
 
-        model.init_bhw(image1_pad.shape[0], image1_pad.shape[-2], image1_pad.shape[-1])
+        if amp:
+            image1 = image1.half()
+            image2 = image2.half()
+
+        padder = frame_utils.InputPadder(image1.shape, mode='kitti', padding_factor=padding_factor)
+        image1_pad, image2_pad = padder.pad(image1[None].to(device), image2[None].to(device))
+
+        model.init_bhwd(image1_pad.shape[0], image1_pad.shape[-2], image1_pad.shape[-1], device, amp)
 
         results_dict = model(image1_pad, image2_pad)
 

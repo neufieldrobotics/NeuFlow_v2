@@ -13,22 +13,28 @@ def bilinear_sample(img, coords):
     ygrid = 2*ygrid/(H-1) - 1
 
     grid = torch.cat([xgrid, ygrid], dim=-1)
-    img = F.grid_sample(img, grid, align_corners=True)
+
+    with torch.backends.cudnn.flags(enabled=False):
+        img = F.grid_sample(img, grid, align_corners=True)
 
     return img
 
 
 class CorrBlock:
-    def __init__(self, radius=4):
+    def __init__(self, radius, levels):
 
-        dxy = torch.linspace(-radius, radius, 2*radius+1, dtype=torch.half, device='cuda')
+        self.radius = radius
+        self.levels = levels
 
-        self.single_delta = torch.stack(torch.meshgrid(dxy, dxy), axis=-1)
-        self.single_delta = self.single_delta.view(1, 2*radius+1, 2*radius+1, 2)
+    def init_bhwd(self, batch_size, height, width, device, amp):
 
-    def init_grid(self, batch_size, height, width):
-        self.grid = utils.coords_grid(batch_size, height, width)
-        self.delta = self.single_delta.repeat(batch_size * height * width, 1, 1, 1)
+        xy_range = torch.linspace(-self.radius, self.radius, 2*self.radius+1, dtype=torch.half if amp else torch.float, device=device)
+
+        delta = torch.stack(torch.meshgrid(xy_range, xy_range, indexing='ij'), axis=-1)
+        delta = delta.view(1, 2*self.radius+1, 2*self.radius+1, 2)
+
+        self.grid = utils.coords_grid(batch_size, height, width, device, amp)
+        self.delta = delta.repeat(batch_size * height * width, 1, 1, 1)
 
     def __call__(self, corr_pyramid, flow):
 
@@ -49,7 +55,7 @@ class CorrBlock:
 
         return out.permute(0, 3, 1, 2).contiguous()
 
-    def init_corr_pyr(self, feature0, feature1, levels=1):
+    def init_corr_pyr(self, feature0, feature1):
         b, c, h, w = feature0.shape
         feature0 = feature0.view(b, c, h*w)
         feature1 = feature1.view(b, c, h*w)
@@ -58,7 +64,7 @@ class CorrBlock:
         corr = corr.view(b*h*w, 1, h, w) / math.sqrt(c)
 
         corr_pyramid = [corr]
-        for i in range(levels-1):
+        for i in range(self.levels-1):
             corr = F.avg_pool2d(corr, kernel_size=2, stride=2)
             corr_pyramid.append(corr)
 

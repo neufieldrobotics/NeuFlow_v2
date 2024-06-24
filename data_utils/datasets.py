@@ -45,8 +45,8 @@ class FlowDataset(data.Dataset):
             img1 = np.array(img1).astype(np.uint8)[..., :3]
             img2 = np.array(img2).astype(np.uint8)[..., :3]
 
-            img1 = torch.from_numpy(img1).permute(2, 0, 1).half()
-            img2 = torch.from_numpy(img2).permute(2, 0, 1).half()
+            img1 = torch.from_numpy(img1).permute(2, 0, 1).float()
+            img2 = torch.from_numpy(img2).permute(2, 0, 1).float()
 
             return img1, img2, self.extra_info[index]
 
@@ -104,8 +104,8 @@ class FlowDataset(data.Dataset):
             if np.count_nonzero(occlusion) / (occlusion.shape[0]*occlusion.shape[1]) < 0.3:
                 valid = np.zeros(flow.shape[:-1])
 
-        img1 = torch.from_numpy(img1).permute(2, 0, 1).half()
-        img2 = torch.from_numpy(img2).permute(2, 0, 1).half()
+        img1 = torch.from_numpy(img1).permute(2, 0, 1).float()
+        img2 = torch.from_numpy(img2).permute(2, 0, 1).float()
         flow = torch.from_numpy(flow).permute(2, 0, 1).float()
 
         # if self.load_occlusion:
@@ -192,7 +192,7 @@ class FlyingThings3D(FlowDataset):
                  root='datasets/FlyingThings3D',
                  dstype='frames_cleanpass',
                  test_set=False,
-                 validate_subset=True,
+                 validate_subset=False,
                  only_left=True,
                  ):
         super(FlyingThings3D, self).__init__(aug_params)
@@ -230,7 +230,8 @@ class FlyingThings3D(FlowDataset):
                             self.image_list += [[images[i + 1], images[i]]]
                             self.flow_list += [flows[i + 1]]
 
-        if test_set and validate_subset:
+        # if test_set and validate_subset:
+        if validate_subset:
             num_val_samples = 1024
             all_test_samples = len(self.image_list)  # 7866
 

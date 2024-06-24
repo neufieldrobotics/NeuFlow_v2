@@ -14,9 +14,12 @@ def my_load_weights(weight_path):
 
     for k, v in checkpoint['model'].items():
 
-        # if k.startswith('flow_attn_s16.'):
+        # if k.startswith('refine_'):
         #     continue
-        # if k.startswith('m
+        # if k.startswith('proj_s8.'):
+        #     continue
+        # if '.running_' in k or '.num_batches' in k:
+        #     continue
         # if k.startswith('upserge_s8.'):
         #     continueample_s1.'):
         #     continue

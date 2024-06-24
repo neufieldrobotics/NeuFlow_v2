@@ -4,8 +4,8 @@ import torch.nn.functional as F
 def normalize_img(img, mean, std):
     return (img / 255. - mean) / std
 
-def coords_grid(b, h, w):
-    ys, xs = torch.meshgrid(torch.arange(h, dtype=torch.half, device='cuda'), torch.arange(w, dtype=torch.half, device='cuda'), indexing='ij')  # [H, W]
+def coords_grid(b, h, w, device, amp):
+    ys, xs = torch.meshgrid(torch.arange(h, dtype=torch.half if amp else torch.float, device=device), torch.arange(w, dtype=torch.half if amp else torch.float, device=device), indexing='ij')  # [H, W]
 
     grid = torch.stack([xs, ys], dim=0)  # [2, H, W] or [3, H, W]
 
@@ -31,6 +31,6 @@ def flow_warp(feature, flow):
 
     b, c, h, w = feature.size()
 
-    grid = coords_grid(b, h, w) + flow  # [B, 2, H, W]
+    grid = coords_grid(b, h, w).to(flow.device) + flow  # [B, 2, H, W]
 
     return bilinear_sample(feature, grid)

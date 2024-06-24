@@ -38,6 +38,8 @@ def get_args_parser():
     parser.add_argument('--local-rank', default=0, type=int)
     parser.add_argument('--distributed', action='store_true')
 
+    parser.add_argument('--amp', action='store_true')
+
     return parser
 
 
@@ -76,13 +78,15 @@ def main(args):
             model,
             device_ids=[args.local_rank],
             output_device=args.local_rank)
-        model = model.module
+        model_without_ddp = model.module
+    else:
+        model_without_ddp = model
 
     num_params = sum(p.numel() for p in model.parameters())
     print('Number of params:', num_params)
 
     scaler = torch.cuda.amp.GradScaler()
-    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr,
+    optimizer = torch.optim.AdamW(model_without_ddp.parameters(), lr=args.lr,
                                   weight_decay=1e-4)
 
     start_step = 0
@@ -91,7 +95,7 @@ def main(args):
 
         state_dict = my_load_weights(args.resume)
 
-        model.load_state_dict(state_dict, strict=args.strict_resume)
+        model_without_ddp.load_state_dict(state_dict, strict=args.strict_resume)
 
         my_freeze_model(model)
 
@@ -99,7 +103,7 @@ def main(args):
             print(name, param.requires_grad)
 
         torch.save({
-            'model': model.state_dict()
+            'model': model_without_ddp.state_dict()
         }, os.path.join(args.checkpoint_dir, 'step_0.pth'))
 
     train_dataset = build_train_dataset(args.stage)
@@ -146,10 +150,14 @@ def main(args):
 
             img1, img2, flow_gt, valid = [x.to(device) for x in sample]
 
-            model.init_bhw(img1.shape[0], img1.shape[-2], img1.shape[-1])
+            if args.amp:
+                img1 = img1.half()
+                img2 = img2.half()
 
-            with torch.cuda.amp.autocast():
-                flow_preds = model(img1, img2, iters=6)
+            model_without_ddp.init_bhwd(img1.shape[0], img1.shape[-2], img1.shape[-1], device, args.amp)
+
+            with torch.cuda.amp.autocast(enabled=args.amp):
+                flow_preds = model(img1, img2, iters_s8=5)
                 loss, metrics = flow_loss_func(flow_preds, flow_gt, valid, args.max_flow)
 
             scaler.scale(loss).backward()
@@ -166,7 +174,7 @@ def main(args):
 
             scaler.update()
 
-            print(total_steps, metrics['epe'], metrics['mag'], optimizer.param_groups[-1]['lr'])
+            print(total_steps, round(metrics['epe'], 3), round(metrics['mag'], 3), optimizer.param_groups[-1]['lr'])
 
             total_steps += 1
 
@@ -175,23 +183,23 @@ def main(args):
                 if args.local_rank == 0:
                     checkpoint_path = os.path.join(args.checkpoint_dir, 'step_%06d.pth' % total_steps)
                     torch.save({
-                        'model': model.state_dict()
+                        'model': model_without_ddp.state_dict()
                     }, checkpoint_path)
 
                 val_results = {}
 
                 if 'things' in args.val_dataset:
-                    test_results_dict = validate_things(model, dstype='frames_cleanpass', validate_subset=True, max_val_flow=args.max_flow)
+                    test_results_dict = validate_things(model_without_ddp, device, dstype='frames_cleanpass', validate_subset=True, max_val_flow=args.max_flow, amp=args.amp)
                     if args.local_rank == 0:
                         val_results.update(test_results_dict)
 
                 if 'sintel' in args.val_dataset:
-                    test_results_dict = validate_sintel(model, dstype='final')
+                    test_results_dict = validate_sintel(model_without_ddp, device, dstype='final', amp=args.amp)
                     if args.local_rank == 0:
                         val_results.update(test_results_dict)
 
                 if 'kitti' in args.val_dataset:
-                    test_results_dict = validate_kitti(model)
+                    test_results_dict = validate_kitti(model_without_ddp, device, amp=args.amp)
                     if args.local_rank == 0:
                         val_results.update(test_results_dict)
 

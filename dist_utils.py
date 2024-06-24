@@ -44,6 +44,8 @@ def _init_dist_slurm(backend, port=None):
         port (int, optional): Master port. Defaults to None.
     """
     proc_id = int(os.environ['SLURM_PROCID'])
+    print('SLURM_PROCID', proc_id)
+    print('SLURM_LOCALID', int(os.environ['SLURM_LOCALID']))
     ntasks = int(os.environ['SLURM_NTASKS'])
     node_list = os.environ['SLURM_NODELIST']
     num_gpus = torch.cuda.device_count()
