@@ -67,7 +67,7 @@ class NeuFlow(torch.nn.Module):
         self.refine_s16.init_bhwd(batch_size, height//16, width//16, device, amp)
         self.refine_s8.init_bhwd(batch_size, height//8, width//8, device, amp)
 
-    def forward(self, img0, img1, iters_s16=3, iters_s8=4):
+    def forward(self, img0, img1, iters_s16=1, iters_s8=6):
 
         flow_list = []
 
