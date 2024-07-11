@@ -14,9 +14,13 @@ def my_load_weights(weight_path):
 
     for k, v in checkpoint['model'].items():
 
-        # if k.startswith('refine_'):
+        if k.startswith('backbone.block_8_16.'):
+            continue
+        # if k.startswith('backbone.block_cat_8.'):
         #     continue
-        # if k.startswith('proj_s8.'):
+        # if k.startswith('refine_s16.conv2.'):
+        #     continue
+        # if k.startswith('refine_s8.conv2.'):
         #     continue
         # if '.running_' in k or '.num_batches' in k:
         #     continue

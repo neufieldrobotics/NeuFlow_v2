@@ -54,8 +54,7 @@ class CNNEncoder(torch.nn.Module):
         return pos[None].repeat(batch_size,1,1,1)
 
     def init_bhwd(self, batch_size, height, width, device, amp):
-        self.pos_s8 = self.init_pos(batch_size, height//8, width//8, device, amp)
-        self.pos_s16 = self.init_pos(batch_size, height//16, width//16, device, amp)
+        self.pos_s16 = self.init_pos(batch_size, height, width, device, amp)
 
     def forward(self, img):
 
@@ -75,6 +74,5 @@ class CNNEncoder(torch.nn.Module):
         x_16 = self.block_cat_16(torch.cat([x_16, x_16_2], dim=1))
 
         x_16 = torch.cat([x_16, self.pos_s16], dim=1)
-        x_8 = torch.cat([x_8, self.pos_s8], dim=1)
 
         return x_16, x_8

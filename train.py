@@ -99,8 +99,8 @@ def main(args):
 
         my_freeze_model(model)
 
-        for name, param in model.named_parameters():
-            print(name, param.requires_grad)
+        # for name, param in model.named_parameters():
+        #     print(name, param.requires_grad)
 
         torch.save({
             'model': model_without_ddp.state_dict()
@@ -157,15 +157,18 @@ def main(args):
             model_without_ddp.init_bhwd(img1.shape[0], img1.shape[-2], img1.shape[-1], device, args.amp)
 
             with torch.cuda.amp.autocast(enabled=args.amp):
-                flow_preds = model(img1, img2, iters_s16=3, iters_s8=5)
+                flow_preds = model(img1, img2, iters_s16=4, iters_s8=7)
                 loss, metrics = flow_loss_func(flow_preds, flow_gt, valid, args.max_flow)
 
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer)
 
+            bad_grad = False
             for name, param in model.named_parameters():
                 if not torch.all(torch.isfinite(param.grad)):
-                    print(name)
+                    bad_grad = True
+                if bad_grad:
+                    print(name, param.grad.mean().item())
                 # print(name, torch.max(torch.abs(param.grad)).item())
 
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)

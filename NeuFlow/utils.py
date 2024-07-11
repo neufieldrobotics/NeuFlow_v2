@@ -1,8 +1,9 @@
 import torch
 import torch.nn.functional as F
 
-def normalize_img(img, mean, std):
-    return (img / 255. - mean) / std
+# def normalize(x):
+#     x_min = x.min()
+#     return (x - x_min) / (x.max() - x_min)
 
 def coords_grid(b, h, w, device, amp):
     ys, xs = torch.meshgrid(torch.arange(h, dtype=torch.half if amp else torch.float, device=device), torch.arange(w, dtype=torch.half if amp else torch.float, device=device), indexing='ij')  # [H, W]
