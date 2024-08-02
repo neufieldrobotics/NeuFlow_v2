@@ -271,7 +271,7 @@ class HD1K(FlowDataset):
         seq_ix = 0
         while 1:
             flows = sorted(glob(os.path.join(root, 'hd1k_flow_gt', 'flow_occ/%06d_*.png' % seq_ix)))
-            images = sorted(glob(os.path.join(root, 'hd1k_input', 'image_2/%06d_*.png' % seq_ix)))
+            images = sorted(glob(os.path.join(root, 'hd1k_input', 'image_2/%06d_*.npy' % seq_ix)))
 
             if len(flows) == 0:
                 break
@@ -319,29 +319,29 @@ def build_train_dataset(stage):
         train_dataset = clean_dataset + final_dataset
 
     elif stage == 'sintel':
-        crop_size = (320, 896)
+        crop_size = (368, 768)
         aug_params = {'crop_size': crop_size, 'min_scale': -0.2, 'max_scale': 0.6, 'do_flip': True}
 
         things_clean = FlyingThings3D(aug_params, dstype='frames_cleanpass')
-        things_final = FlyingThings3D(aug_params, dstype='frames_finalpass')
 
         sintel_clean = MpiSintel(aug_params, split='training', dstype='clean')
         sintel_final = MpiSintel(aug_params, split='training', dstype='final')
 
         aug_params = {'crop_size': crop_size, 'min_scale': -0.3, 'max_scale': 0.5, 'do_flip': True}
 
-        kitti = KITTI(aug_params=aug_params, val=False)
+        kitti = KITTI(aug_params=aug_params)
 
         aug_params = {'crop_size': crop_size, 'min_scale': -0.5, 'max_scale': 0.2, 'do_flip': True}
 
         hd1k = HD1K(aug_params=aug_params)
 
-        train_dataset = 40 * sintel_clean + 40 * sintel_final + 200 * kitti + 10 * hd1k + things_clean + things_final
+        train_dataset = 20 * sintel_clean + 20 * sintel_final + 200 * kitti + 5 * hd1k + things_clean
+        print(len(sintel_clean), len(sintel_final), len(kitti), len(hd1k), len(things_clean))
 
     elif stage == 'kitti':
         aug_params = {'crop_size': (320, 1152), 'min_scale': -0.2, 'max_scale': 0.4, 'do_flip': False}
 
-        train_dataset = KITTI(aug_params, split='training', val=False)
+        train_dataset = KITTI(aug_params, split='training')
 
     elif stage == 'neusim':
         crop_size = (320, 896)

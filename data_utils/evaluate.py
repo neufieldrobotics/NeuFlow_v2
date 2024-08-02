@@ -213,11 +213,11 @@ def validate_kitti(model,
 
         out = ((epe > 3.0) & ((epe / mag) > 0.05)).float()
 
-        epe_list.append(epe[val].cpu().numpy())
+        epe_list.append(epe[val].mean().item())
 
         out_list.append(out[val].cpu().numpy())
 
-    epe_list = np.concatenate(epe_list)
+    epe_list = np.array(epe_list)
     out_list = np.concatenate(out_list)
 
     epe = np.mean(epe_list)

@@ -66,7 +66,7 @@ class FeatureAttention(torch.nn.Module):
         self.post_norm = post_norm
 
         if self.post_norm:
-            self.norm = torch.nn.LayerNorm(feature_dim)
+            self.norm = torch.nn.BatchNorm2d(feature_dim)
 
     def forward(self, concat_features0):
 
@@ -79,11 +79,11 @@ class FeatureAttention(torch.nn.Module):
             concat_features0 = layer(concat_features0, concat_features1)
             concat_features1 = torch.cat(concat_features0.chunk(chunks=2, dim=0)[::-1], dim=0)
 
-        if self.post_norm:
-            concat_features0 = self.norm(concat_features0)
-
         # reshape back
         concat_features0 = concat_features0.view(b, h, w, c).permute(0, 3, 1, 2).contiguous()  # [B, C, H, W]
+        
+        if self.post_norm:
+            concat_features0 = self.norm(concat_features0)
 
         return concat_features0
 

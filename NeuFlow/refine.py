@@ -27,7 +27,8 @@ class Refine(torch.nn.Module):
 
         self.conv3 = torch.nn.Conv2d(inter_dim, iter_context_dim+2, kernel_size=3, stride=1, padding=1, padding_mode='zeros', bias=True)
 
-        self.hidden_act = torch.nn.Tanh()
+        # self.hidden_act = torch.nn.Tanh()
+        self.hidden_act = torch.nn.Hardtanh(min_val=-4.0, max_val=4.0)
         # self.hidden_norm = torch.nn.BatchNorm2d(feature_dim)
 
     def init_bhwd(self, batch_size, height, width, device, amp):

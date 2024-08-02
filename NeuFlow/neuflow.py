@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 
-from NeuFlow import backbone_v8
+from NeuFlow import backbone_v7
 from NeuFlow import transformer
 from NeuFlow import matching
 from NeuFlow import corr
@@ -17,7 +17,7 @@ class NeuFlow(torch.nn.Module):
     def __init__(self):
         super(NeuFlow, self).__init__()
 
-        self.backbone = backbone_v8.CNNEncoder(config.feature_dim_s16, config.context_dim_s16, config.feature_dim_s8, config.context_dim_s8)
+        self.backbone = backbone_v7.CNNEncoder(config.feature_dim_s16, config.context_dim_s16, config.feature_dim_s8, config.context_dim_s8)
         
         self.cross_attn_s16 = transformer.FeatureAttention(config.feature_dim_s16+config.context_dim_s16, num_layers=2, ffn=True, ffn_dim_expansion=1, post_norm=True)
         
@@ -30,16 +30,18 @@ class NeuFlow(torch.nn.Module):
         
         self.merge_s8 = torch.nn.Sequential(torch.nn.Conv2d(config.feature_dim_s16 + config.feature_dim_s8, config.feature_dim_s8, kernel_size=3, stride=1, padding=1, bias=False),
                                               torch.nn.GELU(),
-                                              torch.nn.Conv2d(config.feature_dim_s8, config.feature_dim_s8, kernel_size=3, stride=1, padding=1, bias=False))
+                                              torch.nn.Conv2d(config.feature_dim_s8, config.feature_dim_s8, kernel_size=3, stride=1, padding=1, bias=False),
+                                              torch.nn.BatchNorm2d(config.feature_dim_s8))
 
         self.context_merge_s8 = torch.nn.Sequential(torch.nn.Conv2d(config.context_dim_s16 + config.context_dim_s8, config.context_dim_s8, kernel_size=3, stride=1, padding=1, bias=False),
                                            torch.nn.GELU(),
-                                           torch.nn.Conv2d(config.context_dim_s8, config.context_dim_s8, kernel_size=3, stride=1, padding=1, bias=False))
+                                           torch.nn.Conv2d(config.context_dim_s8, config.context_dim_s8, kernel_size=3, stride=1, padding=1, bias=False),
+                                           torch.nn.BatchNorm2d(config.context_dim_s8))
 
         self.refine_s16 = refine.Refine(config.context_dim_s16, config.iter_context_dim_s16, num_layers=5, levels=1, radius=4, inter_dim=128)
         self.refine_s8 = refine.Refine(config.context_dim_s8, config.iter_context_dim_s8, num_layers=5, levels=1, radius=4, inter_dim=96)
 
-        self.conv_s8 = backbone_v8.ConvBlock(3, config.feature_dim_s1, kernel_size=8, stride=8, padding=0)
+        self.conv_s8 = backbone_v7.ConvBlock(3, config.feature_dim_s1, kernel_size=8, stride=8, padding=0)
         self.upsample_s8 = upsample.UpSample(config.feature_dim_s1, upsample_factor=8)
 
         for p in self.parameters():
@@ -70,7 +72,7 @@ class NeuFlow(torch.nn.Module):
 
         return features, torch.relu(context)
 
-    def forward(self, img0, img1, iters_s16=3, iters_s8=7):
+    def forward(self, img0, img1, iters_s16=2, iters_s8=7):
 
         flow_list = []
 
@@ -122,7 +124,6 @@ class NeuFlow(torch.nn.Module):
 
         context_s16 = F.interpolate(context_s16, scale_factor=2, mode='nearest')
 
-        context_s8 = torch.zeros_like(context_s8)
         context_s8 = self.context_merge_s8(torch.cat([context_s8, context_s16], dim=1))
 
         iter_context_s8 = self.init_iter_context_s8

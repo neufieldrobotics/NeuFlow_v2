@@ -213,7 +213,7 @@ def main(args):
                     if counter >= 10:
 
                         for group in optimizer.param_groups:
-                            group['lr'] *= 0.7
+                            group['lr'] *= 0.8
 
                         counter = 0
 
