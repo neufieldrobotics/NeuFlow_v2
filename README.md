@@ -1,5 +1,11 @@
 # NeuFlow_v2
 
+Official PyTorch implementation of paper:
+
+[NeuFlow v2: Push High-Efficiency Optical Flow To the Limit](NeuFlow_v2.pdf)
+
+Authors: [Zhiyong Zhang](https://www.linkedin.com/in/zhiyong-zhang-0772a0159/), [Huaizu Jiang](https://jianghz.me/), [Hanumant Singh](https://scholar.google.com/citations?user=1UEU5PEAAAAJ)
+
 ## Installation (PyTorch >= 2.0 is required)
 
 ```
