@@ -76,7 +76,7 @@ python train.py \
 We trained on the FlyingThings dataset using 8x A5000 GPUs with the following command:
 ```
 python -m torch.distributed.launch --nproc_per_node=8 --master_port=29501 train.py \
---checkpoint_dir /home/zhang.zhiyo/train_v163 \
+--checkpoint_dir $YOUR_CHECKPOINT_DIR \
 --stage things \
 --val_dataset things sintel kitti \
 --batch_size 256 \
