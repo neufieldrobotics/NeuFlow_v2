@@ -22,7 +22,7 @@ Inference uses our pretrained model, trained with multiple datasets, neuflow_mix
 python infer.py
 ```
 
-<img src="example_result.jpg" width="600" >
+<img src="example_result.jpg" width="400" >
 
 ## Datasets
 
@@ -70,7 +70,7 @@ python images_flows_to_npy.py
 
 ## Training
 
-Simple training code
+Simple training script
 ```
 python train.py \
 --checkpoint_dir $YOUR_CHECKPOINT_DIR \
