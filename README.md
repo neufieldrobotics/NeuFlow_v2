@@ -11,7 +11,9 @@ pip install numpy opencv-python
 
 ## Inference
 
+```
 python infer.py
+```
 
 ## Datasets
 
