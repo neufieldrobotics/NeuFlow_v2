@@ -54,7 +54,7 @@ ln -s $YOUR_DATASET_ROOT datasets
 
 Convert all your images and flows to .npy format to speed up data loading. This script provides an example of converting FlyingThings cleanpass data.
 ```
-images_flows_to_npy.py
+python images_flows_to_npy.py
 ```
 
 ## Training
