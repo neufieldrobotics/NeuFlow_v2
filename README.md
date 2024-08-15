@@ -17,7 +17,7 @@ pip install numpy opencv-python
 
 ## Inference
 
-Inference uses our pretrained model, trained with multiple datasets, neuflow_mixed.pth.
+Inference uses our pretrained model, trained with multiple datasets, neuflow_mixed.pth:
 ```
 python infer.py
 ```
@@ -70,7 +70,7 @@ python images_flows_to_npy.py
 
 ## Training
 
-Simple training script
+Simple training script:
 ```
 python train.py \
 --checkpoint_dir $YOUR_CHECKPOINT_DIR \
