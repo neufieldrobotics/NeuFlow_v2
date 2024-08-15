@@ -94,7 +94,7 @@ python -m torch.distributed.launch --nproc_per_node=8 --master_port=29501 train.
 --num_workers 8 \
 --lr 8e-4 \
 --val_freq 500 \
---distributed \
+--distributed
 ```
 
 ## Evaluation
