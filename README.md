@@ -1,7 +1,5 @@
 # NeuFlow_v2
 
-Convert all your images to .npy files first!!!
-
 ## Installation (PyTorch >= 2.0 is required)
 
 ```
@@ -10,6 +8,10 @@ conda activate neuflow
 conda install pytorch==2.0.1 torchvision==0.15.2 pytorch-cuda=11.7 -c pytorch -c nvidia
 pip install numpy opencv-python
 ```
+
+## Inference
+
+python infer.py
 
 ## Datasets
 
@@ -50,19 +52,38 @@ Symlink your dataset root to `datasets`:
 ln -s $YOUR_DATASET_ROOT datasets
 ```
 
+Convert all your images and flows to .npy format to speed up data loading. This script provides an example of converting FlyingThings cleanpass data.
+```
+images_flows_to_npy.py
+```
+
 ## Training
 
+Simple training code
 ```
 python train.py \
 --checkpoint_dir $YOUR_CHECKPOINT_DIR \
 --stage things \
 --val_dataset things sintel kitti \
---batch_size 42 \
---num_workers 6 \
---lr 2e-4 \
+--batch_size 32 \
+--num_workers 4 \
+--lr 1e-4 \
 --val_freq 1000 \
 --resume neuflow_things.pth \
 --strict_resume
+```
+
+We trained on the FlyingThings dataset using 8x A5000 GPUs with the following command:
+```
+python -m torch.distributed.launch --nproc_per_node=8 --master_port=29501 train.py \
+--checkpoint_dir /home/zhang.zhiyo/train_v163 \
+--stage things \
+--val_dataset things sintel kitti \
+--batch_size 256 \
+--num_workers 8 \
+--lr 8e-4 \
+--val_freq 500 \
+--distributed \
 ```
 
 ## Evaluation

@@ -29,6 +29,14 @@ class ConvBlock(torch.nn.Module):
 
         return x
 
+    def forward_fuse(self, x):
+
+        x = self.relu(self.conv1(x))
+        x = self.relu(self.conv2(x))
+
+        return x
+
+
 class CNNEncoder(torch.nn.Module):
     def __init__(self, feature_dim_s16, context_dim_s16, feature_dim_s8, context_dim_s8):
         super(CNNEncoder, self).__init__()

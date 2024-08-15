@@ -72,7 +72,7 @@ class NeuFlow(torch.nn.Module):
 
         return features, torch.relu(context)
 
-    def forward(self, img0, img1, iters_s16=2, iters_s8=7):
+    def forward(self, img0, img1, iters_s16=1, iters_s8=8):
 
         flow_list = []
 

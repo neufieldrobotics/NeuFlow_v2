@@ -112,6 +112,15 @@ def read_vkitti_png_flow(flow_fn):
     return out_flow, bgr[..., 0] != 0
 
 
+def read_viper_flow(filename):
+    flow = np.load(filename)
+    flow_x = flow['u']
+    flow_y = flow['v']
+    flow_x = np.nan_to_num(flow_x)
+    flow_y = np.nan_to_num(flow_y)
+    return np.stack([flow_x, flow_y], axis=-1)
+
+
 def writeFlowKITTI(filename, uv):
     uv = 64.0 * uv + 2 ** 15
     valid = np.ones([uv.shape[0], uv.shape[1], 1])
@@ -135,4 +144,6 @@ def read_gen(file_name, pil=False):
             return flow[:, :, :-1]
     elif ext == '.npy':
         return np.load(file_name)
+    elif ext == '.npz':
+        return read_viper_flow(file_name)
     return []

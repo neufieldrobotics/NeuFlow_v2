@@ -3,6 +3,7 @@ import torch
 import argparse
 
 from NeuFlow.neuflow import NeuFlow
+from NeuFlow import backbone_v7
 from data_utils.evaluate import validate_things, validate_sintel, validate_kitti
 
 def get_args_parser():
@@ -27,10 +28,9 @@ def main(args):
     num_params = sum(p.numel() for p in model.parameters())
     print('Number of params:', num_params)
 
-    validate_things(model, device, dstype='frames_cleanpass', test_set=False, validate_subset=True, max_val_flow=400)
-    validate_things(model, device, dstype='frames_cleanpass', validate_subset=True, max_val_flow=400)
-    # validate_things(model, device, dstype='frames_finalpass', validate_subset=False, max_val_flow=400)
-    # validate_sintel(model, device, dstype='clean')
+    # validate_things(model, device, dstype='frames_cleanpass', test_set=False, validate_subset=True, max_val_flow=400)
+    # validate_things(model, device, dstype='frames_cleanpass', validate_subset=True, max_val_flow=400)
+    validate_sintel(model, device, dstype='clean')
     validate_sintel(model, device, dstype='final')
     validate_kitti(model, device)
 

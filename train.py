@@ -7,7 +7,7 @@ import os
 from data_utils.datasets import build_train_dataset
 from NeuFlow.neuflow import NeuFlow
 from loss import flow_loss_func
-from data_utils.evaluate import validate_things, validate_sintel, validate_kitti
+from data_utils.evaluate import validate_things, validate_sintel, validate_kitti, validate_viper
 from load_model import my_load_weights, my_freeze_model
 from dist_utils import get_dist_info, init_dist, setup_for_distributed
 
@@ -23,7 +23,7 @@ def get_args_parser():
 
     # training
     parser.add_argument('--lr', default=1e-4, type=float)
-    parser.add_argument('--batch_size', default=64, type=int)
+    parser.add_argument('--batch_size', default=32, type=int)
     parser.add_argument('--num_workers', default=8, type=int)
     parser.add_argument('--val_freq', default=1000, type=int)
     parser.add_argument('--num_steps', default=1000000, type=int)
@@ -37,8 +37,6 @@ def get_args_parser():
     # distributed training
     parser.add_argument('--local-rank', default=0, type=int)
     parser.add_argument('--distributed', action='store_true')
-
-    parser.add_argument('--amp', action='store_true')
 
     return parser
 
@@ -150,13 +148,12 @@ def main(args):
 
             img1, img2, flow_gt, valid = [x.to(device) for x in sample]
 
-            if args.amp:
-                img1 = img1.half()
-                img2 = img2.half()
+            img1 = img1.half()
+            img2 = img2.half()
 
-            model_without_ddp.init_bhwd(img1.shape[0], img1.shape[-2], img1.shape[-1], device, args.amp)
+            model_without_ddp.init_bhwd(img1.shape[0], img1.shape[-2], img1.shape[-1], device)
 
-            with torch.cuda.amp.autocast(enabled=args.amp):
+            with torch.cuda.amp.autocast(enabled=True):
                 flow_preds = model(img1, img2, iters_s16=4, iters_s8=7)
                 loss, metrics = flow_loss_func(flow_preds, flow_gt, valid, args.max_flow)
 
@@ -192,17 +189,22 @@ def main(args):
                 val_results = {}
 
                 if 'things' in args.val_dataset:
-                    test_results_dict = validate_things(model_without_ddp, device, dstype='frames_cleanpass', validate_subset=True, max_val_flow=args.max_flow, amp=args.amp)
+                    test_results_dict = validate_things(model_without_ddp, device, dstype='frames_cleanpass', validate_subset=True)
                     if args.local_rank == 0:
                         val_results.update(test_results_dict)
 
                 if 'sintel' in args.val_dataset:
-                    test_results_dict = validate_sintel(model_without_ddp, device, dstype='final', amp=args.amp)
+                    test_results_dict = validate_sintel(model_without_ddp, device, dstype='final')
                     if args.local_rank == 0:
                         val_results.update(test_results_dict)
 
                 if 'kitti' in args.val_dataset:
-                    test_results_dict = validate_kitti(model_without_ddp, device, amp=args.amp)
+                    test_results_dict = validate_kitti(model_without_ddp, device)
+                    if args.local_rank == 0:
+                        val_results.update(test_results_dict)
+
+                if 'viper' in args.val_dataset:
+                    test_results_dict = validate_viper(model_without_ddp, device)
                     if args.local_rank == 0:
                         val_results.update(test_results_dict)
 

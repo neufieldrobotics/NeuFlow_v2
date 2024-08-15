@@ -99,29 +99,24 @@ class FlowDataset(data.Dataset):
                 else:
                     img1, img2, flow = self.augmentor(img1, img2, flow)
 
-        if self.load_occlusion:
-
-            if np.count_nonzero(occlusion) / (occlusion.shape[0]*occlusion.shape[1]) < 0.3:
-                valid = np.zeros(flow.shape[:-1])
-
         img1 = torch.from_numpy(img1).permute(2, 0, 1).float()
         img2 = torch.from_numpy(img2).permute(2, 0, 1).float()
         flow = torch.from_numpy(flow).permute(2, 0, 1).float()
 
-        # if self.load_occlusion:
-        #     occlusion = torch.from_numpy(occlusion)  # [H, W]
+        if self.load_occlusion:
+            occlusion = torch.from_numpy(occlusion)  # [H, W]
 
         if valid is not None:
             valid = torch.from_numpy(valid)
         else:
             valid = (flow[0].abs() < 1000) & (flow[1].abs() < 1000)
 
-        # # mask out occluded pixels
-        # if self.load_occlusion:
-        #     # non-occlusion: 0, occlusion: 255
-        #     noc_valid = 1 - occlusion / 255.  # 0 or 1
+        # mask out occluded pixels
+        if self.load_occlusion:
+            # non-occlusion: 0, occlusion: 255
+            noc_valid = 1 - occlusion / 255.  # 0 or 1
 
-        #     return img1, img2, flow, valid.float(), noc_valid.float()
+            return img1, img2, flow, noc_valid.float()
 
         return img1, img2, flow, valid.float()
 
@@ -282,6 +277,58 @@ class HD1K(FlowDataset):
 
             seq_ix += 1
 
+class VIPER(FlowDataset):
+    def __init__(self, aug_params=None,
+                 root='datasets/VIPER',
+                 splits=['train', 'train_2'],
+                 load_occlusion=True,
+                 only_left=False
+                 ):
+        super(VIPER, self).__init__(aug_params, load_occlusion=load_occlusion)
+
+        empty_occ_path = root + '/empty_mask.png'
+
+        for split in splits:
+
+            image_dirs = sorted(glob(osp.join(root, split, 'img/*')))
+            
+            for image_dir in image_dirs:
+
+                seq = os.path.basename(image_dir)
+                print(seq)
+
+                image_paths = sorted(glob(osp.join(image_dir, '*.npy')))
+                
+                for image_0_path, image_1_path in zip(image_paths[:-1],image_paths[1:]):
+
+                    file_0_name = os.path.splitext(os.path.basename(image_0_path))[0]
+                    flow_0_path = osp.join(root, split, 'flow', seq, file_0_name + '.npz')
+
+                    if os.path.exists(flow_0_path):
+                        self.image_list += [[image_0_path, image_1_path]]
+                        self.flow_list += [flow_0_path]
+                        if load_occlusion:
+                            occ_0_path = osp.join(root, split, 'flow_mask', seq, file_0_name + '.png')
+                            if os.path.exists(occ_0_path):
+                                self.occ_list += [occ_0_path]
+                            else:
+                                self.occ_list += [empty_occ_path]
+
+                    if not only_left:
+
+                        file_1_name = os.path.splitext(os.path.basename(image_1_path))[0]
+                        flow_1_path = osp.join(root, split, 'flowbw', seq, file_1_name + '.npz')
+
+                        if os.path.exists(flow_1_path):
+                            self.image_list += [[image_1_path, image_0_path]]
+                            self.flow_list += [flow_1_path]
+                            if load_occlusion:
+                                occ_1_path = osp.join(root, split, 'flowbw_mask', seq, file_1_name + '.png')
+                                if os.path.exists(occ_1_path):
+                                    self.occ_list += [occ_1_path]
+                                else:
+                                    self.occ_list += [empty_occ_path]
+
 
 class NeuSim(FlowDataset):
     def __init__(self, aug_params=None,
@@ -337,6 +384,31 @@ def build_train_dataset(stage):
 
         train_dataset = 20 * sintel_clean + 20 * sintel_final + 200 * kitti + 5 * hd1k + things_clean
         print(len(sintel_clean), len(sintel_final), len(kitti), len(hd1k), len(things_clean))
+
+    elif stage == 'viper':
+        crop_size = (368, 768)
+        aug_params = {'crop_size': crop_size, 'min_scale': -0.2, 'max_scale': 0.6, 'do_flip': True}
+
+        things_clean = FlyingThings3D(aug_params, dstype='frames_cleanpass')
+
+        sintel_clean = MpiSintel(aug_params, split='training', dstype='clean')
+        sintel_final = MpiSintel(aug_params, split='training', dstype='final')
+
+        aug_params = {'crop_size': crop_size, 'min_scale': -0.3, 'max_scale': 0.5, 'do_flip': True}
+
+        kitti = KITTI(aug_params=aug_params)
+
+        aug_params = {'crop_size': crop_size, 'min_scale': -0.5, 'max_scale': 0.2, 'do_flip': True}
+
+        hd1k = HD1K(aug_params=aug_params)
+
+        aug_params = {'crop_size': crop_size, 'min_scale': -0.2, 'max_scale': 0.6, 'do_flip': True}
+
+        viper = VIPER(aug_params=aug_params)
+
+        # train_dataset = 80 * sintel_clean + 80 * sintel_final + 400 * kitti + 20 * hd1k + 4 * things_clean + viper
+        train_dataset = 40 * sintel_clean + 40 * sintel_final + 20 * hd1k + 4 * things_clean + viper + 400 * kitti
+        print(len(sintel_clean), len(sintel_final), len(kitti), len(hd1k), len(things_clean), len(viper))
 
     elif stage == 'kitti':
         aug_params = {'crop_size': (320, 1152), 'min_scale': -0.2, 'max_scale': 0.4, 'do_flip': False}
