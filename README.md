@@ -2,7 +2,7 @@
 
 Official PyTorch implementation of paper:
 
-[NeuFlow v2: Push High-Efficiency Optical Flow To the Limit](NeuFlow_v2.pdf)
+[NeuFlow v2: Push High-Efficiency Optical Flow To the Limit](https://arxiv.org/abs/2408.10161)
 
 Authors: [Zhiyong Zhang](https://www.linkedin.com/in/zhiyong-zhang-0772a0159/), [Aniket Gupta](https://scholar.google.com/citations?hl=zh-CN&user=arsUOq0AAAAJ), [Huaizu Jiang](https://jianghz.me/), [Hanumant Singh](https://scholar.google.com/citations?user=1UEU5PEAAAAJ)
 
