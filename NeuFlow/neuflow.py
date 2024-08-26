@@ -7,13 +7,14 @@ from NeuFlow import matching
 from NeuFlow import corr
 from NeuFlow import refine
 from NeuFlow import upsample
-from NeuFlow import utils
 from NeuFlow import config
 
-import time
+from huggingface_hub import PyTorchModelHubMixin
 
 
-class NeuFlow(torch.nn.Module):
+class NeuFlow(torch.nn.Module,
+              PyTorchModelHubMixin,
+              repo_url="https://github.com/neufieldrobotics/NeuFlow_v2", license="apache-2.0", pipeline_tag="image-to-image"):
     def __init__(self):
         super(NeuFlow, self).__init__()
 
