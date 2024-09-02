@@ -15,6 +15,18 @@ conda install pytorch==2.0.1 torchvision==0.15.2 pytorch-cuda=11.7 -c pytorch -c
 pip install numpy opencv-python
 ```
 
+## Inference with HuggingFace 🤗
+Install huggingface-hub
+```
+pip install huggingface-hub
+```
+Inference uses our pretrained model, trained with multiple datasets, neuflow_mixed.pth:
+```
+python infer_hf.py
+```
+
+<img src="example_result.jpg" width="400" >
+
 ## Inference
 
 Inference uses our pretrained model, trained with multiple datasets, neuflow_mixed.pth:
