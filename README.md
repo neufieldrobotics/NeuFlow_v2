@@ -34,8 +34,6 @@ Inference uses our pretrained model, trained with multiple datasets, neuflow_mix
 python infer.py
 ```
 
-<img src="example_result.jpg" width="400" >
-
 ## Datasets
 
 The datasets used to train and evaluate NeuFlow are as follows:
