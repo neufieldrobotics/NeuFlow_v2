@@ -13,7 +13,7 @@ image_height = 432
 
 def get_cuda_image(image_path):
     image = cv2.imread(image_path)
-
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)    # Train in RGB but infer in BGR: match training (PIL = RGB)
     image = cv2.resize(image, (image_width, image_height))
 
     image = torch.from_numpy(image).permute(2, 0, 1).half()
